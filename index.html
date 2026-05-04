@@ -973,6 +973,7 @@
             { key: 'donatedCamera',  label: '흘러간 카메라', group: '자산' },
             { key: 'haksa',          label: '학사관리',     group: '부동산' },
             { key: 'sarang',         label: '사랑의집',     group: '부동산' },
+            { key: 'somang',         label: '소망의집',     group: '부동산' },
             { key: 'world',          label: '월드하우스',   group: '부동산' },
             { key: 'parsonage',      label: '사택지원',     group: '지원·기타' },
             { key: 'wishlist',       label: '소원리스트',   group: '지원·기타' },
@@ -1091,7 +1092,7 @@
             const isAdmin = currentUser.role === 'admin';
             const perms = String(currentUser.permissions || '').split(',').map(function(s){return s.trim();});
             // 탭 보이기/숨기기 (통계 포함 모든 탭 권한 체크)
-            ['current','donated','wishlist','vehicle','donatedVehicle','camera','donatedCamera','parsonage','haksa','sarang','world','dashboard'].forEach(function(key) {
+            ['current','donated','wishlist','vehicle','donatedVehicle','camera','donatedCamera','parsonage','haksa','sarang','somang','world','dashboard'].forEach(function(key) {
                 const btn = document.querySelector('.tab[onclick*="switchTab(\'' + key + '\')"]');
                 if (!btn) return;
                 if (isAdmin || perms.indexOf(key) !== -1) {
@@ -1158,7 +1159,7 @@
                 return;
             }
             // 권한 있는 첫 탭 찾기
-            const order = ['current','donated','wishlist','vehicle','donatedVehicle','camera','donatedCamera','parsonage','haksa','sarang','world','dashboard'];
+            const order = ['current','donated','wishlist','vehicle','donatedVehicle','camera','donatedCamera','parsonage','haksa','sarang','somang','world','dashboard'];
             for (let i = 0; i < order.length; i++) {
                 if (hasPermission(order[i])) {
                     switchTab(order[i]);
@@ -1217,6 +1218,7 @@
             <button class="tab" onclick="switchTab('parsonage')">사택지원</button>
             <button class="tab" onclick="switchTab('haksa')">학사관리</button>
             <button class="tab" onclick="switchTab('sarang')">사랑의집</button>
+            <button class="tab" onclick="switchTab('somang')">소망의집</button>
             <button class="tab" onclick="switchTab('world')">월드하우스</button>
             <button class="tab" onclick="switchTab('wishlist')">소원리스트</button>
             <button class="tab" onclick="switchTab('dashboard')">통계</button>
@@ -1489,8 +1491,21 @@
                 </div>
                 <div style="font-size:0.78rem;color:#888;margin-bottom:6px;padding:6px 10px;background:#f5f7fa;border-radius:4px;">
                     📌 일시 내림차순(최근이 위)으로 표시됩니다. 최상단의 노란 행은 입력 순서상 가장 마지막의 보유잔액입니다.
+                    <br>※ 이석진 항목은 별건관리 섹션에서 별도로 관리되며, 교역자지원합계에는 포함되지 않습니다.
                 </div>
                 <div id="parsonageTransContainer" style="overflow-x:auto;"></div>
+            </div>
+
+            <!-- [별건 지원] 섹션 — 이석진 항목 별도 관리 -->
+            <div style="background:white;border-radius:8px;padding:14px;margin-top:14px;border:2px solid #B39DDB;">
+                <h3 style="margin:0 0 10px;color:#5E35B1;font-weight:700;font-size:1.05rem;">📌 별건관리</h3>
+                <div class="toolbar" style="margin-bottom:10px;">
+                    <button class="btn btn-success" onclick="exportToExcel('parsonage_special')">📥 엑셀 다운로드</button>
+                    <div class="search-box">
+                        <input type="text" id="searchParsonageSpecial" placeholder="사유 검색..." oninput="renderParsonage()">
+                    </div>
+                </div>
+                <div id="parsonageSpecialContainer" style="overflow-x:auto;"></div>
             </div>
         </div>
 
@@ -1539,21 +1554,17 @@
             </div>
         </div>
 
-        <!-- 사랑의집 탭 (사랑의집 + 소망의집) -->
+        <!-- 사랑의집 탭 -->
         <div id="sarang-tab" class="tab-content" style="overflow-y:auto;">
             <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                 <div style="display:flex;gap:14px;flex-wrap:wrap;">
                     <div style="flex:1;min-width:140px;background:#F5F8FB;border-left:4px solid #1976D2;padding:10px 14px;border-radius:6px;">
-                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">사랑의집·소망의집 자산</div>
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">사랑의집 자산</div>
                         <div id="sarangCountTotal" style="font-size:1.4rem;font-weight:700;color:#1976D2;">0건</div>
                     </div>
                     <div style="flex:1;min-width:140px;background:#F1F8E9;border-left:4px solid #388E3C;padding:10px 14px;border-radius:6px;">
                         <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">사랑의집 보증금</div>
                         <div id="sarangSumLove" style="font-size:1.4rem;font-weight:700;color:#388E3C;">0만원</div>
-                    </div>
-                    <div style="flex:1;min-width:140px;background:#FFF3E0;border-left:4px solid #E65100;padding:10px 14px;border-radius:6px;">
-                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">소망의집 지원금</div>
-                        <div id="sarangSumHope" style="font-size:1.4rem;font-weight:700;color:#E65100;">0만원</div>
                     </div>
                     <div style="flex:1;min-width:140px;background:#FCE4EC;border-left:4px solid #C2185B;padding:10px 14px;border-radius:6px;">
                         <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">관리중 총원</div>
@@ -1572,9 +1583,59 @@
                 </div>
                 <div id="sarangTableContainer" style="overflow-x:auto;"></div>
             </div>
+
+            <!-- 사역자지원 섹션 — 사랑의집과 별도 관리 (사랑관35, 64호) -->
+            <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-top:3px solid #5E35B1;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <h3 style="margin:0;color:#5E35B1;font-weight:700;font-size:1.05rem;">📌 사역자지원 <span id="reCountSarangPastor" style="color:#888;font-size:0.85rem;font-weight:500;">(0건)</span></h3>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <input type="text" id="searchSarangPastor" class="search-box" placeholder="🔍 검색" oninput="renderRealestateTables()" style="max-width:200px;">
+                        <button class="btn btn-success" onclick="exportToExcel('realestate_sarang_pastor')">📥 엑셀</button>
+                    </div>
+                </div>
+                <div id="sarangPastorContainer" style="overflow-x:auto;"></div>
+            </div>
+        </div>
+
+        <!-- 소망의집 탭 (소망의집 현황 + 사랑의집·소망의집 관리제외) -->
+        <div id="somang-tab" class="tab-content" style="overflow-y:auto;">
+            <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                <div style="display:flex;gap:14px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:140px;background:#F5F8FB;border-left:4px solid #1976D2;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">소망의집 자산</div>
+                        <div id="somangCountActive" style="font-size:1.4rem;font-weight:700;color:#1976D2;">0건</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:#FFF3E0;border-left:4px solid #E65100;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">소망의집 지원금</div>
+                        <div id="sarangSumHope" style="font-size:1.4rem;font-weight:700;color:#E65100;">0만원</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:#FCE4EC;border-left:4px solid #C2185B;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">관리중 총원</div>
+                        <div id="somangSumPeople" style="font-size:1.4rem;font-weight:700;color:#C2185B;">0명</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:#ECEFF1;border-left:4px solid #607D8B;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">졸업 건수</div>
+                        <div id="somangCountExcluded" style="font-size:1.4rem;font-weight:700;color:#607D8B;">0건</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:#E3F2FD;border-left:4px solid #1565C0;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">졸업자 지원금</div>
+                        <div id="somangSumGraduated" style="font-size:1.4rem;font-weight:700;color:#1565C0;">0만원</div>
+                    </div>
+                </div>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-top:3px solid #999;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <h3 style="margin:0;color:#666;font-weight:700;font-size:1.05rem;">🎓 사랑의집에서 소망의집으로 졸업 <span id="reCountSarangExcluded" style="color:#888;font-size:0.85rem;font-weight:500;">(0건)</span></h3>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <input type="text" id="searchSarangExcluded" class="search-box" placeholder="🔍 검색" oninput="renderRealestateTables()" style="max-width:200px;">
+                        <button class="btn btn-success" onclick="exportToExcel('realestate_sarang_excluded')">📥 엑셀</button>
+                    </div>
+                </div>
+                <div id="sarangExcludedContainer" style="overflow-x:auto;"></div>
+            </div>
             <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="margin:0;color:#2E5C8A;font-weight:700;font-size:1.05rem;">서울광염교회 소망의 집 현황 <span id="reCountSomang" style="color:#888;font-size:0.85rem;font-weight:500;">(0건)</span></h3>
+                    <h3 style="margin:0;color:#2E5C8A;font-weight:700;font-size:1.05rem;">소망의집 <span id="reCountSomang" style="color:#888;font-size:0.85rem;font-weight:500;">(0건)</span></h3>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <input type="text" id="searchSomang" class="search-box" placeholder="🔍 검색" oninput="renderRealestateTables()" style="max-width:220px;">
                         <button class="btn btn-primary editor-only" onclick="openRealestateModal('소망의집')">➕ 등록</button>
@@ -1582,16 +1643,6 @@
                     </div>
                 </div>
                 <div id="somangTableContainer" style="overflow-x:auto;"></div>
-            </div>
-            <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-top:3px solid #999;">
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="margin:0;color:#666;font-weight:700;font-size:1.05rem;">📦 사랑의집·소망의집 관리제외 <span id="reCountSarangExcluded" style="color:#888;font-size:0.85rem;font-weight:500;">(0건)</span></h3>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <input type="text" id="searchSarangExcluded" class="search-box" placeholder="🔍 검색" oninput="renderRealestateTables()" style="max-width:200px;">
-                        <button class="btn btn-success" onclick="exportToExcel('realestate_sarang_excluded')">📥 엑셀</button>
-                    </div>
-                </div>
-                <div id="sarangExcludedContainer" style="overflow-x:auto;"></div>
             </div>
         </div>
 
@@ -2475,11 +2526,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>분류 *</label>
-                        <select id="reCategory" required>
+                        <select id="reCategory" required onchange="onCategoryChangeInModal()">
                             <option value="학사관">학사관</option>
                             <option value="사랑의집">사랑의집</option>
                             <option value="소망의집">소망의집</option>
                             <option value="월드하우스">월드하우스</option>
+                            <option value="사랑의집졸업">사랑의집졸업</option>
                             <option value="기타">기타</option>
                         </select>
                     </div>
@@ -2566,9 +2618,8 @@
                     <div class="form-group">
                         <label>상태</label>
                         <select id="reStatus">
-                            <option value="거주중">거주중</option>
-                            <option value="졸업">졸업</option>
-                            <option value="관리종료">관리종료</option>
+                            <option value="관리중">관리중</option>
+                            <option value="완료">완료</option>
                         </select>
                     </div>
                 </div>
@@ -2964,9 +3015,39 @@
         // ============================================================
         // 데이터 로드 (Google Sheets 우선, localStorage 폴백)
         // ============================================================
+        // 옛 데이터 형식(excluded=true && category in [사랑의집, 소망의집])을
+        // 새 형식(category=사랑의집졸업, excluded=false)으로 자동 변환
+        // 그리고 status 값도 관리중/완료 2가지로 정규화
+        function migrateRealestateToGraduationCategory() {
+            if (!Array.isArray(realestateItems) || !realestateItems.length) return 0;
+            let n = 0, m = 0;
+            realestateItems.forEach(function(r) {
+                if (r && r.excluded === true && (r.category === '사랑의집' || r.category === '소망의집')) {
+                    r.prevCategory = r.category;
+                    r.category = '사랑의집졸업';
+                    r.excluded = false;
+                    if (!r.excludedReason) r.excludedReason = '사랑의집에서 소망의집으로 졸업';
+                    n++;
+                }
+                // status 정규화 (거주중→관리중, 졸업/관리종료→완료)
+                if (r && typeof normalizeReStatus === 'function') {
+                    const before = String(r.status || '');
+                    const after = normalizeReStatus(before);
+                    if (before !== after) { r.status = after; m++; }
+                }
+            });
+            if (n > 0 || m > 0) {
+                try { saveToLocalStorage(); } catch (e) {}
+                if (n > 0) console.log('[migrate] ' + n + '건 → 사랑의집졸업 카테고리로 변환');
+                if (m > 0) console.log('[migrate] ' + m + '건 status 정규화 (관리중/완료)');
+            }
+            return n + m;
+        }
+
         async function loadData() {
             // 1) 먼저 localStorage에서 로드 (즉시 화면 표시)
             loadFromLocalStorage();
+            migrateRealestateToGraduationCategory(); // 옛 형식 → 사랑의집졸업 카테고리로 자동 마이그레이션
             renderAll();
 
             // 2) Google Sheets 연결 시도
@@ -3013,6 +3094,7 @@
                             }
                         });
                     }
+                    migrateRealestateToGraduationCategory(); // Sheets에서 받은 옛 형식 데이터도 마이그레이션
                     // localStorage도 업데이트
                     saveToLocalStorage();
                     renderAll();
@@ -3098,26 +3180,26 @@
 {id:40,category:"소망의집",name:"소망집22",hosu:"22",occupant:"최소영(박주광)",people:1,phone:"010-7274-6511",address:"서울시 중랑구 중화 2동 329-58",houseType:"",size:"",helper:"",helperPhone:"",deposit:400,rent:15,area:"",moveInDate:"2017-05-12",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2017.05.12 소망의집 22호 입주",remark:"",status:"거주중"},
 {id:41,category:"소망의집",name:"소망집23",hosu:"23",occupant:"주영애",people:3,phone:"010-5597-7445",address:"도봉구 도봉로 169가길 30 제 A동 202호",houseType:"A동 202호",size:"",helper:"",helperPhone:"",deposit:1432,rent:20,area:"",moveInDate:"2017-05-28",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2017.05.28 사랑의집16호에서 소망의집 23호 보증금 1천만원지원하여 전환",remark:"",status:"거주중"},
 {id:42,category:"소망의집",name:"소망집24",hosu:"24",occupant:"김소희7",people:3,phone:"010-8120-1204",address:"노원구  덕릉로126라길 18-4 301호",houseType:"",size:"",helper:"",helperPhone:"",deposit:500,rent:30,area:"",moveInDate:"2017-09-29",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2017.09.29  시작",remark:"",status:"거주중"},
-{id:43,category:"소망의집",name:"사랑관31",hosu:"48호",occupant:"마연옥(16성백철)",people:3,phone:"010-5231-4723",address:"노원구 상계동 670 주공아파트 901-102",houseType:"1층 방2칸",size:"",helper:"",helperPhone:"",deposit:2500,rent:33,area:"45.9",moveInDate:"2014-11-16",rentPayer:"공동명의\n확정일자",owner:"",ownerPhone:"",lien:"",agency:"",history:"*14.11.14 일 최초입주(교회지원 1천만원/1,500만원 입주자부담) *2014.12월 1천만원 반환함, *2015.1.17 사랑의집으로 남기고 보증금 2,500만원은 마연옥집사의 개인것으로 함, 돈이 필요하여 다시 1천만원을 돌려드리고 교회에서 1천만원을 지원한 것으로 함",remark:"",status:"거주중"},
-{id:44,category:"소망의집",name:"사랑관22",hosu:"36호",occupant:"목유사 (김해숙)",people:3,phone:"010-8482-1592",address:"전남 광주시 남구 월산동 990-11",houseType:"주택1층(  층)",size:"",helper:"",helperPhone:"",deposit:3500,rent:0,area:"63.22",moveInDate:"2011-06-17",rentPayer:"확정일자",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2011.7월초 이전입주/ 3,500만 확정일자/교회지원 2,500",remark:"",status:"거주중"},
-{id:45,category:"소망의집",name:"사랑관1",hosu:"1호",occupant:"김혜숙",people:2,phone:"010-3425-7535",address:"노원구 상계동721 주공아파트 511-202",houseType:"연립 2층(2층)",size:"방2, 주방겸거실, 욕실",helper:"",helperPhone:"",deposit:1050,rent:0,area:"31.98",moveInDate:"2013-11-20",rentPayer:"전세권설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2001.1월 최초입주/1,050만 *2003.1월 이전/2,000만 *2006. 2월 이전/3,700만*12.06.재계약/5,000만;전세권증2010.11월이전/전세 5,000만 *13.11.20 이전 4500(20)전월세로이전  2018.9 소망의집 27호 졸업함 1,050만원지원",remark:"",status:"졸업"},
-{id:46,category:"소망의집",name:"사랑관19",hosu:"32호",occupant:"목회자 강대복목사님",people:3,phone:"",address:"서울시 성동구 용답동 70-2",houseType:"빌라 지층(  층)",size:"지층 방2",helper:"",helperPhone:"",deposit:1000,rent:0,area:"46.87",moveInDate:"2008-12-27",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2008.12월 최초입주/3,000万  *2018.10월 소망의집으로 졸업 1000만원 지원함",remark:"",status:"졸업"},
-{id:47,category:"소망의집",name:"사랑관32",hosu:"49호",occupant:"안선희(10김치영)",people:1,phone:"010-8518-5024",address:"강북구수유동(인수동) 356-40 지층서쪽",houseType:"다세대주택지층서쪽",size:"",helper:"",helperPhone:"",deposit:300,rent:0,area:"",moveInDate:"2018-10-26",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*14.12.2 일 최초입주(교회지원 1천8백만원/2백만원 입주자부담) *2018.10.26 사랑의집 졸업 소망의집으로 이전",remark:"",status:"졸업"},
+{id:43,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관31",hosu:"48호",occupant:"마연옥(16성백철)",people:3,phone:"010-5231-4723",address:"노원구 상계동 670 주공아파트 901-102",houseType:"1층 방2칸",size:"",helper:"",helperPhone:"",deposit:2500,rent:33,area:"45.9",moveInDate:"2014-11-16",rentPayer:"공동명의\n확정일자",owner:"",ownerPhone:"",lien:"",agency:"",history:"*14.11.14 일 최초입주(교회지원 1천만원/1,500만원 입주자부담) *2014.12월 1천만원 반환함, *2015.1.17 사랑의집으로 남기고 보증금 2,500만원은 마연옥집사의 개인것으로 함, 돈이 필요하여 다시 1천만원을 돌려드리고 교회에서 1천만원을 지원한 것으로 함",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
+{id:44,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관22",hosu:"36호",occupant:"목유사 (김해숙)",people:3,phone:"010-8482-1592",address:"전남 광주시 남구 월산동 990-11",houseType:"주택1층(  층)",size:"",helper:"",helperPhone:"",deposit:3500,rent:0,area:"63.22",moveInDate:"2011-06-17",rentPayer:"확정일자",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2011.7월초 이전입주/ 3,500만 확정일자/교회지원 2,500",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
+{id:45,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관1",hosu:"1호",occupant:"김혜숙",people:2,phone:"010-3425-7535",address:"노원구 상계동721 주공아파트 511-202",houseType:"연립 2층(2층)",size:"방2, 주방겸거실, 욕실",helper:"",helperPhone:"",deposit:1050,rent:0,area:"31.98",moveInDate:"2013-11-20",rentPayer:"전세권설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2001.1월 최초입주/1,050만 *2003.1월 이전/2,000만 *2006. 2월 이전/3,700만*12.06.재계약/5,000만;전세권증2010.11월이전/전세 5,000만 *13.11.20 이전 4500(20)전월세로이전  2018.9 소망의집 27호 졸업함 1,050만원지원",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:46,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관19",hosu:"32호",occupant:"목회자 강대복목사님",people:3,phone:"",address:"서울시 성동구 용답동 70-2",houseType:"빌라 지층(  층)",size:"지층 방2",helper:"",helperPhone:"",deposit:1000,rent:0,area:"46.87",moveInDate:"2008-12-27",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2008.12월 최초입주/3,000万  *2018.10월 소망의집으로 졸업 1000만원 지원함",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:47,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관32",hosu:"49호",occupant:"안선희(10김치영)",people:1,phone:"010-8518-5024",address:"강북구수유동(인수동) 356-40 지층서쪽",houseType:"다세대주택지층서쪽",size:"",helper:"",helperPhone:"",deposit:300,rent:0,area:"",moveInDate:"2018-10-26",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*14.12.2 일 최초입주(교회지원 1천8백만원/2백만원 입주자부담) *2018.10.26 사랑의집 졸업 소망의집으로 이전",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
 {id:48,category:"소망의집",name:"소망집30",hosu:"30호",occupant:"이호원(박주광목사)",people:3,phone:"010-9059-9581",address:"경기도 남양주시 별내동 별사랑마을 2201-401",houseType:"",size:"",helper:"",helperPhone:"",deposit:866,rent:0,area:"23.4",moveInDate:"2018-10-28",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2018.10.26 소망의집으로 지정 지원",remark:"",status:"거주중"},
-{id:49,category:"소망의집",name:"사랑관30",hosu:"47호",occupant:"박흥기 홍문숙(10지현도)",people:4,phone:"010-5229-7750\n010-4246-3050",address:"경기도 남양주시 두물로 39번지 75 3층 2호",houseType:"다세대주택 2층 우축",size:"",helper:"",helperPhone:"",deposit:1000,rent:60,area:"69.31",moveInDate:"2014-09-12",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"201812 졸업-계약서는 우리명의로 있기에 보관하고 있음, 이사하게 되면 그때 계약해지하면서 돌려드리기로함, 1천만원지원함",remark:"보증금 4500",status:"졸업"},
-{id:50,category:"소망의집",name:"사랑관33",hosu:"50호",occupant:"오상현",people:2,phone:"010-5225-9531",address:"서울특별시 노원구 한글비석로48길 15 (상계동) 2층",houseType:"2층 1호 방2칸",size:"",helper:"",helperPhone:"",deposit:1000,rent:20,area:"39.98",moveInDate:"2015-01-24",rentPayer:"전세권설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*15.01.24 최초입주  *2017년부터 월세 20으로 인상  * 2019년 소망의집으로 이전",remark:"",status:"거주중"},
+{id:49,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관30",hosu:"47호",occupant:"박흥기 홍문숙(10지현도)",people:4,phone:"010-5229-7750\n010-4246-3050",address:"경기도 남양주시 두물로 39번지 75 3층 2호",houseType:"다세대주택 2층 우축",size:"",helper:"",helperPhone:"",deposit:1000,rent:60,area:"69.31",moveInDate:"2014-09-12",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"201812 졸업-계약서는 우리명의로 있기에 보관하고 있음, 이사하게 되면 그때 계약해지하면서 돌려드리기로함, 1천만원지원함",remark:"보증금 4500",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:50,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관33",hosu:"50호",occupant:"오상현",people:2,phone:"010-5225-9531",address:"서울특별시 노원구 한글비석로48길 15 (상계동) 2층",houseType:"2층 1호 방2칸",size:"",helper:"",helperPhone:"",deposit:1000,rent:20,area:"39.98",moveInDate:"2015-01-24",rentPayer:"전세권설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*15.01.24 최초입주  *2017년부터 월세 20으로 인상  * 2019년 소망의집으로 이전",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
 {id:51,category:"소망의집",name:"소망집32",hosu:"32호",occupant:"김영숙1(강신욱목사)",people:4,phone:"010-5896-4772",address:"서울 마포구 월드컵북로47길 8 (상암월드컵아파트 1단지) 106동 403호",houseType:"",size:"",helper:"",helperPhone:"",deposit:1506,rent:0,area:"21평",moveInDate:"2019-05-26",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2019.5.26 소망의집으로 지정 지원  1506만원지원",remark:"",status:"거주중"},
 {id:52,category:"소망의집",name:"소망집33",hosu:"",occupant:"곽요셉",people:2,phone:"010-2204-3927",address:"서울시 서대문구 중가로 10길 82",houseType:"",size:"",helper:"",helperPhone:"",deposit:1575,rent:0,area:"10",moveInDate:"2019-06-28",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2019.07.21 소망의집으로 지정 지원 1300만원지원",remark:"",status:"거주중"},
-{id:53,category:"소망의집",name:"사랑관20",hosu:"33호",occupant:"이종열",people:3,phone:"010-9152-1311",address:"경기도 동두천시 행선로 112(생연동 두택공사 생연아파트) 9동 201호",houseType:"아파트 9층(  층)",size:"",helper:"",helperPhone:"",deposit:1000,rent:0,area:"46.9",moveInDate:"2019-08-30",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2008.12월 최초입주/3,000만 *2009.10월 이전/3,000만  *2019년 9월 29일 소망의집으로 이전",remark:"",status:"거주중"},
-{id:54,category:"소망의집",name:"사랑관34",hosu:"51호",occupant:"박근진",people:4,phone:"010-3433-1009(박현덕목사)",address:"서울시 동작구 사당동 202-7",houseType:"2층 방 전부",size:"",helper:"",helperPhone:"",deposit:1000,rent:0,area:"36.2",moveInDate:"2016-05-28",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*16.5.28 최초입주  *2020.5월 사랑의집 졸업, 소망의집 34호로 이전",remark:"",status:"졸업"},
-{id:55,category:"소망의집",name:"사랑관11",hosu:"18호",occupant:"홍은숙",people:2,phone:"010-9048-1559",address:"도봉구 도봉동 583-10 (202호)",houseType:"주택2층(  층)",size:"방2,거실겸주방,욕실",helper:"",helperPhone:"",deposit:1000,rent:0,area:"42.17",moveInDate:"2006-11-30",rentPayer:"전세권\n설정(3,500)",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2005.09.13 최초입주/500만(25만)(5백만원 집사님 재정) 2006.11.30 이전/3,500만 *2008.11월 자동연장*2011.11월 연장(인상1,500만) 5,000만 *2020.6 졸업 1천지원, 소망37호",remark:"",status:"졸업"},
+{id:53,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관20",hosu:"33호",occupant:"이종열",people:3,phone:"010-9152-1311",address:"경기도 동두천시 행선로 112(생연동 두택공사 생연아파트) 9동 201호",houseType:"아파트 9층(  층)",size:"",helper:"",helperPhone:"",deposit:1000,rent:0,area:"46.9",moveInDate:"2019-08-30",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2008.12월 최초입주/3,000만 *2009.10월 이전/3,000만  *2019년 9월 29일 소망의집으로 이전",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
+{id:54,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관34",hosu:"51호",occupant:"박근진",people:4,phone:"010-3433-1009(박현덕목사)",address:"서울시 동작구 사당동 202-7",houseType:"2층 방 전부",size:"",helper:"",helperPhone:"",deposit:1000,rent:0,area:"36.2",moveInDate:"2016-05-28",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*16.5.28 최초입주  *2020.5월 사랑의집 졸업, 소망의집 34호로 이전",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:55,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관11",hosu:"18호",occupant:"홍은숙",people:2,phone:"010-9048-1559",address:"도봉구 도봉동 583-10 (202호)",houseType:"주택2층(  층)",size:"방2,거실겸주방,욕실",helper:"",helperPhone:"",deposit:1000,rent:0,area:"42.17",moveInDate:"2006-11-30",rentPayer:"전세권\n설정(3,500)",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2005.09.13 최초입주/500만(25만)(5백만원 집사님 재정) 2006.11.30 이전/3,500만 *2008.11월 자동연장*2011.11월 연장(인상1,500만) 5,000만 *2020.6 졸업 1천지원, 소망37호",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
 {id:56,category:"소망의집",name:"",hosu:"",occupant:"김진선",people:3,phone:"010-9500-5165",address:"서울시 도봉구 도당로2길 46-6",houseType:"201",size:"",helper:"",helperPhone:"",deposit:1000,rent:25,area:"36.2",moveInDate:"2020-07-13",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"",remark:"",status:"거주중"},
-{id:57,category:"소망의집",name:"사랑관3",hosu:"7호",occupant:"이영오",people:5,phone:"011-9997-3684",address:"노원구 공릉로 58가길 9",houseType:"빌라 2층(4층)",size:"방3, 거실, 주방, 화장실",helper:"",helperPhone:"",deposit:1693,rent:0,area:"35.79",moveInDate:"2015-02-01",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*03.5월 최초입주/300만 *04.3월 이전; 1500/30만(서성집) *06.6월 이전/4,000만 *08.6월 재계약/4,000만(월세15만)*10.6월 재계약/5,000만(월세20만)*15.1.16 영구임대전세보증금지원*17.6.11 2백만원상환/1493만원지원",remark:"",status:"거주중"},
-{id:58,category:"소망의집",name:"사랑관4",hosu:"9호",occupant:"문재남",people:5,phone:"",address:"도봉구 도봉1동 557-13호 수정B동 301호",houseType:"연립3층(  층)",size:"방3, 주방, 거실, 욕실",helper:"",helperPhone:"",deposit:2000,rent:0,area:"",moveInDate:"2009-05-22",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2003.12월 최초입주/1,000만 *2004.4월 이전;1,000(20만)        *2006.5월 이전/3,500만 *2007.11월 이전/4,500만(자가) *2009.5월 7,000만중 교회지원 2500, *2021년 3월 11일 5백만원 비용이 되는대로 반환하고 오늘자로 사랑의집 졸업",remark:"",status:"졸업"},
-{id:59,category:"소망의집",name:"사랑관17",hosu:"30호",occupant:"주정자",people:3,phone:"010-2300-0169\n010-4525-1250",address:"도봉구 도봉1동 574-26 지층;국민임대주택",houseType:"임대지층(  층)",size:"방3,거실겸주방,욕실",helper:"",helperPhone:"",deposit:195,rent:1,area:"41.58",moveInDate:"2007-11-15",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2007.11월 최초입주/총500만 소요  *20210311 소망의집 41호로 졸업",remark:"",status:"졸업"},
-{id:60,category:"소망의집",name:"사랑관12",hosu:"19호",occupant:"이진",people:4,phone:"010-6362-5449",address:"도봉구 시루봉로 27가길 11-4",houseType:"",size:"",helper:"",helperPhone:"",deposit:726,rent:30,area:"",moveInDate:"2015-12-22",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2005.12월 최초입주/2,800만 *2009.12월 재계약/2,700만(20만) *2013.10월 이전/3,000만(30만) *2015.12 LH영구임대주택 이사(726만3천원/30만원)",remark:"",status:"거주중"},
-{id:61,category:"소망의집",name:"사랑관13",hosu:"22호",occupant:"김윤자",people:2,phone:"010-7141-3950",address:"도봉구 도봉로 177길 126 진주빌라 3-103",houseType:"빌라 1층(  층)",size:"방2,거실겸주방,욕실",helper:"",helperPhone:"",deposit:2050,rent:0,area:"38.47",moveInDate:"2006-05-05",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2006.5월 최초입주/450만원권사님, 교회지원 2050만원 *2008.5월 자동연장  2019년 김윤자권사님이 주택을 구입함 8천만원구입 4천 대출, 20210801 5백만원교회 반환 지원1550만원, 졸업",remark:"",status:"졸업"},
-{id:62,category:"소망의집",name:"사랑관15",hosu:"27호",occupant:"한금련",people:1,phone:"011-9788-9912",address:"도봉구 도봉동 282-334",houseType:"빌라2층(  층)",size:"방2,주방,욕실",helper:"",helperPhone:"",deposit:1000,rent:0,area:"32",moveInDate:"2011-11-05",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2006.12월 최초입주/2,300만 *2011.10월 이전/인상(700만원)3,000만 *2022.04.28 사랑의집졸업",remark:"",status:"졸업"},
+{id:57,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관3",hosu:"7호",occupant:"이영오",people:5,phone:"011-9997-3684",address:"노원구 공릉로 58가길 9",houseType:"빌라 2층(4층)",size:"방3, 거실, 주방, 화장실",helper:"",helperPhone:"",deposit:1693,rent:0,area:"35.79",moveInDate:"2015-02-01",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*03.5월 최초입주/300만 *04.3월 이전; 1500/30만(서성집) *06.6월 이전/4,000만 *08.6월 재계약/4,000만(월세15만)*10.6월 재계약/5,000만(월세20만)*15.1.16 영구임대전세보증금지원*17.6.11 2백만원상환/1493만원지원",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
+{id:58,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관4",hosu:"9호",occupant:"문재남",people:5,phone:"",address:"도봉구 도봉1동 557-13호 수정B동 301호",houseType:"연립3층(  층)",size:"방3, 주방, 거실, 욕실",helper:"",helperPhone:"",deposit:2000,rent:0,area:"",moveInDate:"2009-05-22",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2003.12월 최초입주/1,000만 *2004.4월 이전;1,000(20만)        *2006.5월 이전/3,500만 *2007.11월 이전/4,500만(자가) *2009.5월 7,000만중 교회지원 2500, *2021년 3월 11일 5백만원 비용이 되는대로 반환하고 오늘자로 사랑의집 졸업",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:59,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관17",hosu:"30호",occupant:"주정자",people:3,phone:"010-2300-0169\n010-4525-1250",address:"도봉구 도봉1동 574-26 지층;국민임대주택",houseType:"임대지층(  층)",size:"방3,거실겸주방,욕실",helper:"",helperPhone:"",deposit:195,rent:1,area:"41.58",moveInDate:"2007-11-15",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2007.11월 최초입주/총500만 소요  *20210311 소망의집 41호로 졸업",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:60,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관12",hosu:"19호",occupant:"이진",people:4,phone:"010-6362-5449",address:"도봉구 시루봉로 27가길 11-4",houseType:"",size:"",helper:"",helperPhone:"",deposit:726,rent:30,area:"",moveInDate:"2015-12-22",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2005.12월 최초입주/2,800만 *2009.12월 재계약/2,700만(20만) *2013.10월 이전/3,000만(30만) *2015.12 LH영구임대주택 이사(726만3천원/30만원)",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"거주중"},
+{id:61,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관13",hosu:"22호",occupant:"김윤자",people:2,phone:"010-7141-3950",address:"도봉구 도봉로 177길 126 진주빌라 3-103",houseType:"빌라 1층(  층)",size:"방2,거실겸주방,욕실",helper:"",helperPhone:"",deposit:2050,rent:0,area:"38.47",moveInDate:"2006-05-05",rentPayer:"",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2006.5월 최초입주/450만원권사님, 교회지원 2050만원 *2008.5월 자동연장  2019년 김윤자권사님이 주택을 구입함 8천만원구입 4천 대출, 20210801 5백만원교회 반환 지원1550만원, 졸업",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
+{id:62,category:"사랑의집졸업",prevCategory:"소망의집",name:"사랑관15",hosu:"27호",occupant:"한금련",people:1,phone:"011-9788-9912",address:"도봉구 도봉동 282-334",houseType:"빌라2층(  층)",size:"방2,주방,욕실",helper:"",helperPhone:"",deposit:1000,rent:0,area:"32",moveInDate:"2011-11-05",rentPayer:"전세권\n설정",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2006.12월 최초입주/2,300만 *2011.10월 이전/인상(700만원)3,000만 *2022.04.28 사랑의집졸업",remark:"",excludedDate:"2026-05-04",excludedReason:"사랑의집에서 소망의집으로 졸업",status:"졸업"},
 {id:63,category:"소망의집",name:"소망집52",hosu:"52호",occupant:"MR GILL",people:1,phone:"임마누엘아문 목사 010-9774-1009",address:"강북구 한천로 162길 29",houseType:"옥탑방",size:"방2,주방,욕실",helper:"",helperPhone:"",deposit:300,rent:0,area:"32",moveInDate:"2023-01-10",rentPayer:"월세",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2023.01.10 최초입주  (보증금 300, 월세 25만원)",remark:"",status:"거주중"},
 {id:64,category:"소망의집",name:"소망집53",hosu:"53호",occupant:"미혼모자매 여진이",people:1,phone:"안요한(가명) 목사 010-9149-6639",address:"평내동 224-1 쥬움펠리스빌 301호",houseType:"",size:"",helper:"",helperPhone:"",deposit:500,rent:0,area:"20",moveInDate:"2023-11-18",rentPayer:"월세",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2023.11.08. 최초 입주일  (추후 이헌택 목사가 조사 예정), 보증금 500만원 교회 지원,   전체 보증금은 1억 2천만에 월세 20만원인데, 대출 이자와 월세까지 정부 지원이 나옵니다.",remark:"",status:"거주중"},
 {id:65,category:"소망의집",name:"소망집54",hosu:"54호",occupant:"박진희",people:1,phone:"박진희  010-9160-6527",address:"노원구 상계동 737 상계주공아파트 306동 1303호",houseType:"최준 목사 010-6401-1210",size:"주방, 욕실, 방1",helper:"",helperPhone:"",deposit:1000,rent:0,area:"32.39",moveInDate:"2023-04-10",rentPayer:"월세",owner:"",ownerPhone:"",lien:"",agency:"",history:"*2023.4.10. 최초 입주일  보증금 1000만원, 월세 474,000원  최초 교회서 월세 10개월치 500만원 지원함(2023년 5월)  2025년 3월에 2년 재계약",remark:"",status:"거주중"},
@@ -3577,7 +3659,7 @@
                 if (parsonageItems.length > 0) await gsSaveAll('parsonage', parsonageItems);
                 // 부동산 — 카테고리별로 분리하여 3개 시트에 각각 업로드
                 const reHaksaList  = realestateItems.filter(r => r.category === '학사관');
-                const reSarangList = realestateItems.filter(r => r.category === '사랑의집' || r.category === '소망의집');
+                const reSarangList = realestateItems.filter(r => r.category === '사랑의집' || r.category === '소망의집' || r.category === '사랑의집졸업');
                 const reWorldList  = realestateItems.filter(r => r.category === '월드하우스');
                 if (reHaksaList.length > 0)  await gsSaveAll('haksa',  reHaksaList);
                 if (reSarangList.length > 0) await gsSaveAll('sarang', reSarangList);
@@ -3664,6 +3746,7 @@
                 'parsonage': 'parsonage-tab',
                 'haksa': 'haksa-tab',
                 'sarang': 'sarang-tab',
+                'somang': 'somang-tab',
                 'world': 'world-tab',
                 'wishlist': 'wishlist-tab',
                 'dashboard': 'dashboard-tab',
@@ -3676,7 +3759,7 @@
             if (tab === 'camera' && typeof renderCameraTable === 'function') renderCameraTable();
             if (tab === 'donatedCamera' && typeof renderDonatedCameraTable === 'function') renderDonatedCameraTable();
             if (tab === 'parsonage' && typeof renderParsonage === 'function') renderParsonage();
-            if ((tab === 'haksa' || tab === 'sarang' || tab === 'world') && typeof renderRealestateTables === 'function') renderRealestateTables();
+            if ((tab === 'haksa' || tab === 'sarang' || tab === 'somang' || tab === 'world') && typeof renderRealestateTables === 'function') renderRealestateTables();
         }
 
         // ============================================================
@@ -4673,9 +4756,16 @@
             }
         });
 
+        // 별건 지원 대상 — 현재는 '이석진' 고정. 향후 확장 시 배열로 운영
+        const PARSONAGE_SPECIAL_NAMES = ['이석진'];
+        function isParsonageSpecial(item) {
+            return PARSONAGE_SPECIAL_NAMES.indexOf(String(item.name || '').trim()) !== -1;
+        }
+
         function renderParsonage() {
             renderParsonageSupport();
             renderParsonageTrans();
+            renderParsonageSpecial();
             updateParsonageStats();
         }
 
@@ -4683,7 +4773,8 @@
             const container = document.getElementById('parsonageSupportContainer');
             if (!container) return;
             const search = (document.getElementById('searchParsonageSupport').value || '').toString().trim().toLowerCase();
-            let items = parsonageItems.filter(i => i.recordType === 'support');
+            // 별건 지원 대상(이석진) 제외
+            let items = parsonageItems.filter(i => i.recordType === 'support' && !isParsonageSpecial(i));
             if (search) {
                 items = items.filter(i => (i.name || '').toLowerCase().includes(search));
             }
@@ -4748,7 +4839,8 @@
             const container = document.getElementById('parsonageTransContainer');
             if (!container) return;
             const search = (document.getElementById('searchParsonageTrans').value || '').toString().trim().toLowerCase();
-            let items = parsonageItems.filter(i => i.recordType === 'transaction');
+            // 별건 지원 대상(이석진) 제외
+            let items = parsonageItems.filter(i => i.recordType === 'transaction' && !isParsonageSpecial(i));
             if (search) {
                 items = items.filter(i =>
                     (i.name || '').toLowerCase().includes(search) ||
@@ -4756,9 +4848,8 @@
                 );
             }
 
-            // 현재 보유잔액 = 입력 순서상 가장 마지막(최대 id) 항목의 balance
-            // (날짜가 잘못 입력된 행이 있어도 안정적)
-            const allTrans = parsonageItems.filter(i => i.recordType === 'transaction');
+            // 현재 보유잔액 = 입력 순서상 가장 마지막(최대 id) 항목의 balance — 별건 제외 후 기준
+            const allTrans = parsonageItems.filter(i => i.recordType === 'transaction' && !isParsonageSpecial(i));
             const sortedById = [...allTrans].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
             const currentBalance = sortedById.length ? (Number(sortedById[0].balance) || 0) : 0;
 
@@ -4827,14 +4918,14 @@
         }
 
         function updateParsonageStats() {
-            // 보유잔액: 변동내역 중 입력 순서상 가장 마지막(=최대 id)의 balance
-            const trans = parsonageItems.filter(i => i.recordType === 'transaction');
+            // 보유잔액: 변동내역(별건 제외) 중 입력 순서상 가장 마지막(=최대 id)의 balance
+            const trans = parsonageItems.filter(i => i.recordType === 'transaction' && !isParsonageSpecial(i));
             trans.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
             const balance = trans.length > 0 ? (Number(trans[0].balance) || 0) : 0;
 
-            // 교역자지원합계: support 항목들의 churchSupport 총합
+            // 교역자지원합계: support 항목들의 churchSupport 총합 — 별건 지원(이석진) 제외
             const paidTotal = parsonageItems
-                .filter(i => i.recordType === 'support')
+                .filter(i => i.recordType === 'support' && !isParsonageSpecial(i))
                 .reduce((sum, i) => sum + (Number(i.churchSupport) || 0), 0);
 
             // 사택지원기금: 교역자지원합계 + 보유잔액
@@ -4846,6 +4937,115 @@
                 '₩' + paidTotal.toLocaleString();
             document.getElementById('parsonageBalance').textContent =
                 '₩' + balance.toLocaleString();
+        }
+
+        // 별건 지원 섹션 렌더 — 이석진 항목(support + transaction 모두) 표시
+        function renderParsonageSpecial() {
+            const container = document.getElementById('parsonageSpecialContainer');
+            if (!container) return;
+            const search = ((document.getElementById('searchParsonageSpecial') || {}).value || '').toString().trim().toLowerCase();
+            const all = parsonageItems.filter(isParsonageSpecial);
+            let support = all.filter(i => i.recordType === 'support');
+            let trans   = all.filter(i => i.recordType === 'transaction');
+            if (search) {
+                support = support.filter(i => ((i.notes || '') + ' ' + (i.category || '')).toLowerCase().includes(search));
+                trans   = trans.filter(i => ((i.reason || '') + ' ' + (i.notes || '')).toLowerCase().includes(search));
+            }
+
+            let html = '';
+
+            // 1) 사택지원 정보 (support)
+            if (support.length) {
+                html += '<div style="font-weight:600;color:#5E35B1;margin:6px 0;font-size:0.92rem;">사택지원 정보</div>';
+                html += '<table style="margin-bottom:10px;"><thead><tr>'
+                    + '<th>성명</th><th>구분</th>'
+                    + '<th style="text-align:right">집값</th>'
+                    + '<th style="text-align:right">교회지원금</th>'
+                    + '<th style="text-align:right">본인부담</th>'
+                    + '<th style="text-align:right">대출금</th>'
+                    + '<th style="text-align:right">이자/월</th>'
+                    + '<th style="text-align:right">월세</th>'
+                    + '<th>확인서</th><th>확인일</th><th>비고</th><th>작업</th>'
+                    + '</tr></thead><tbody>';
+                support.forEach(item => {
+                    html += '<tr>'
+                        + '<td><strong>' + (item.name || '') + '</strong></td>'
+                        + '<td>' + (item.category || '-') + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.housePrice)||0).toLocaleString() + '</td>'
+                        + '<td style="text-align:right;font-weight:600;color:#5E35B1;">' + (Number(item.churchSupport)||0).toLocaleString() + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.selfPay)||0).toLocaleString() + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.loan)||0).toLocaleString() + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.interest)||0).toLocaleString() + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.monthlyRent)||0).toLocaleString() + '</td>'
+                        + '<td>' + (item.checkStatus || '-') + '</td>'
+                        + '<td>' + formatDate(item.checkDate) + '</td>'
+                        + '<td>' + (item.notes || '') + '</td>'
+                        + '<td><div class="action-btns editor-only">'
+                        +   '<button class="btn btn-secondary btn-sm" onclick="editParsonageItem(' + item.id + ')">수정</button>'
+                        +   '<button class="btn btn-danger btn-sm" onclick="deleteParsonageItem(' + item.id + ')">삭제</button>'
+                        + '</div></td>'
+                        + '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            // 2) 지원·반환 내역 (transaction) — 별건 자체 누계
+            if (trans.length) {
+                trans.sort((a, b) => {
+                    const ad = String(a.date || ''), bd = String(b.date || '');
+                    const cmp = bd.localeCompare(ad);
+                    if (cmp !== 0) return cmp;
+                    return (Number(b.id) || 0) - (Number(a.id) || 0);
+                });
+                // 별건 자체 누계 = 가장 마지막(최대 id) trans 의 balance
+                const sortedById = [...trans].sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+                const specialBalance = sortedById.length ? (Number(sortedById[0].balance) || 0) : 0;
+
+                html += '<div style="font-weight:600;color:#5E35B1;margin:6px 0;font-size:0.92rem;">지원·반환 내역</div>';
+                html += '<table><thead><tr>'
+                    + '<th>일시</th><th>성명</th><th>지원·반환</th>'
+                    + '<th style="text-align:right">금액</th>'
+                    + '<th>비고(사유)</th>'
+                    + '<th style="text-align:right">변동후 잔액</th>'
+                    + '<th>작업</th>'
+                    + '</tr></thead><tbody>';
+                html += '<tr style="background:#EDE7F6;border-top:2px solid #5E35B1;border-bottom:2px solid #5E35B1;">'
+                    + '<td colspan="5" style="text-align:right;font-weight:700;color:#5E35B1;padding:10px 8px;">📌 별건 누계 잔액</td>'
+                    + '<td style="text-align:right;font-weight:700;color:#5E35B1;font-size:1.05rem;">₩' + specialBalance.toLocaleString() + '</td>'
+                    + '<td></td>'
+                    + '</tr>';
+                trans.forEach(item => {
+                    const amt = Number(item.amount) || 0;
+                    const dirBadge = amt === 0
+                        ? '<span style="color:#999;">-</span>'
+                        : amt < 0
+                        ? '<span class="badge" style="background:#FFEBEE;color:#C62828;">지원</span>'
+                        : '<span class="badge" style="background:#E8F5E9;color:#2E7D32;">반환</span>';
+                    const amtColor = amt < 0 ? '#C62828' : '#2E7D32';
+                    const absAmt = Math.abs(amt);
+                    const reason = (item.reason || '').toString().trim();
+                    const notes = (item.notes || '').toString().trim();
+                    let combined = reason && notes ? (reason + ' <span style="color:#999;">/</span> ' + notes) : (reason || notes);
+                    html += '<tr>'
+                        + '<td>' + formatDate(item.date) + '</td>'
+                        + '<td><strong>' + (item.name || '') + '</strong></td>'
+                        + '<td>' + dirBadge + '</td>'
+                        + '<td style="text-align:right;color:' + amtColor + ';font-weight:600;">' + absAmt.toLocaleString() + '</td>'
+                        + '<td>' + combined + '</td>'
+                        + '<td style="text-align:right">' + (Number(item.balance) || 0).toLocaleString() + '</td>'
+                        + '<td><div class="action-btns editor-only">'
+                        +   '<button class="btn btn-secondary btn-sm" onclick="editParsonageItem(' + item.id + ')">수정</button>'
+                        +   '<button class="btn btn-danger btn-sm" onclick="deleteParsonageItem(' + item.id + ')">삭제</button>'
+                        + '</div></td>'
+                        + '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            if (!html) {
+                html = '<div style="padding:20px;text-align:center;color:#999;">별건관리 항목이 없습니다.</div>';
+            }
+            container.innerHTML = html;
         }
 
         // 흘려보낸 비품을 비품관리 목록으로 복원
@@ -5583,13 +5783,15 @@
             } else if (type === 'parsonage_support') {
                 filename = '사택지원현황.csv';
                 rows.push('성명,구분,집값,교회지원금,본인부담,대출금,이자/월,월세,확인서,확인일,비고');
-                parsonageItems.filter(i => i.recordType === 'support').forEach(item => {
+                // 별건(이석진) 제외
+                parsonageItems.filter(i => i.recordType === 'support' && !isParsonageSpecial(i)).forEach(item => {
                     rows.push([item.name,item.category,Number(item.housePrice)||0,Number(item.churchSupport)||0,Number(item.selfPay)||0,Number(item.loan)||0,Number(item.interest)||0,Number(item.monthlyRent)||0,item.checkStatus,formatDate(item.checkDate),item.notes||''].map(csvCell).join(','));
                 });
             } else if (type === 'parsonage_trans') {
                 filename = '지원및 반환.csv';
                 rows.push('일시,성명,지원·반환,금액,비고(사유),변동후 잔액');
-                parsonageItems.filter(i => i.recordType === 'transaction').forEach(item => {
+                // 별건(이석진) 제외
+                parsonageItems.filter(i => i.recordType === 'transaction' && !isParsonageSpecial(i)).forEach(item => {
                     const amt = Number(item.amount) || 0;
                     const dir = amt === 0 ? '' : (amt < 0 ? '지원' : '반환');
                     const reason = (item.reason || '').toString().trim();
@@ -5597,15 +5799,31 @@
                     const combined = (reason && notes) ? `${reason} / ${notes}` : (reason || notes);
                     rows.push([formatDate(item.date),item.name,dir,Math.abs(amt),combined,Number(item.balance)||0].map(csvCell).join(','));
                 });
+            } else if (type === 'parsonage_special') {
+                filename = '별건지원_이석진.csv';
+                rows.push('레코드구분,성명,일시/구분,금액/지원금,사유/비고,변동후 잔액');
+                parsonageItems.filter(isParsonageSpecial).forEach(item => {
+                    if (item.recordType === 'support') {
+                        rows.push(['사택지원', item.name || '', item.category || '', Number(item.churchSupport)||0, item.notes||'', ''].map(csvCell).join(','));
+                    } else if (item.recordType === 'transaction') {
+                        const amt = Number(item.amount) || 0;
+                        const dir = amt === 0 ? '' : (amt < 0 ? '지원' : '반환');
+                        const reason = (item.reason || '').toString().trim();
+                        const notes = (item.notes || '').toString().trim();
+                        const combined = (reason && notes) ? `${reason} / ${notes}` : (reason || notes);
+                        rows.push(['지원·반환', item.name || '', formatDate(item.date) + ' / ' + dir, Math.abs(amt), combined, Number(item.balance)||0].map(csvCell).join(','));
+                    }
+                });
             } else if (type && type.indexOf('realestate') === 0) {
                 // 부동산 카테고리별 + 관리제외 + 통합 내보내기
                 const categoryMap = {
                     'realestate':                  { label: '부동산통합', filter: r => true },
                     'realestate_haksa':            { label: '학사관현황', filter: r => !r.excluded && r.category === '학사관' },
                     'realestate_haksa_excluded':   { label: '학사관관리제외', filter: r => r.excluded && r.category === '학사관' },
-                    'realestate_sarang':           { label: '사랑의집현황', filter: r => !r.excluded && r.category === '사랑의집' },
+                    'realestate_sarang':           { label: '사랑의집현황', filter: r => !r.excluded && r.category === '사랑의집' && !isSarangPastor(r) },
+                    'realestate_sarang_pastor':    { label: '사역자지원', filter: r => !r.excluded && r.category === '사랑의집' && isSarangPastor(r) },
                     'realestate_somang':           { label: '소망의집현황', filter: r => !r.excluded && r.category === '소망의집' },
-                    'realestate_sarang_excluded':  { label: '사랑소망관리제외', filter: r => r.excluded && (r.category === '사랑의집' || r.category === '소망의집') },
+                    'realestate_sarang_excluded':  { label: '사랑의집졸업', filter: r => r.category === '사랑의집졸업' },
                     'realestate_world':            { label: '월드하우스현황', filter: r => !r.excluded && r.category === '월드하우스' },
                     'realestate_world_excluded':   { label: '월드하우스관리제외', filter: r => r.excluded && r.category === '월드하우스' },
                     'realestate_excluded':         { label: '관리제외부동산', filter: r => r.excluded }
@@ -6126,6 +6344,30 @@
         // ============================================================
         // 부동산관리 (학사관·사랑의집·소망의집·월드하우스 — 3 탭 구조)
         // ============================================================
+        // 부동산 상태값 정규화: 거주중 → 관리중, 졸업/관리종료 → 완료
+        function normalizeReStatus(s) {
+            const v = String(s || '').trim();
+            if (v === '거주중' || v === '관리중') return '관리중';
+            if (v === '졸업' || v === '관리종료' || v === '완료' || v === '지원완료') return '완료';
+            if (!v) return '관리중';
+            return v;
+        }
+
+        // 사역자지원 — 사랑의집 메인 리스트와 KPI에서 제외, 별도 섹션에 표시
+        // 식별 기준 (둘 중 하나라도 해당하면 사역자지원):
+        //   1) 사랑관35 — 이름이 정확히 '사랑관35' 또는 '사랑관35'를 포함하면서 호수가 52호
+        //   2) 64호    — 호수가 '64호' 이거나 이름이 '64호'를 포함 (예: '사랑관64호')
+        function isSarangPastor(r) {
+            if (!r || r.category !== '사랑의집') return false;
+            const name = String(r.name || '').trim();
+            const hosu = String(r.hosu || '').trim();
+            // 1) 사랑관35
+            if (name === '사랑관35') return true;
+            // 2) 64호 — 호수 또는 이름에 '64호' 포함
+            if (hosu === '64호') return true;
+            if (/(^|[^0-9])64호/.test(name)) return true;
+            return false;
+        }
         const REALESTATE_SECTIONS = [
             { key: '학사관',    containerId: 'haksaTableContainer',  countId: 'reCountHaksa',  searchId: 'searchHaksa',  emptyKind: '학사관' },
             { key: '사랑의집',  containerId: 'sarangTableContainer', countId: 'reCountSarang', searchId: 'searchSarang', emptyKind: '사랑의집' },
@@ -6133,10 +6375,12 @@
             { key: '월드하우스', containerId: 'worldTableContainer',  countId: 'reCountWorld',  searchId: 'searchWorld',  emptyKind: '월드하우스' }
         ];
         // 관리제외 섹션은 탭별로 분리 — 각 탭 하단에 자기 카테고리(들) 관리제외만
+        // filterMode='excluded' (default) → r.excluded && cat in categories
+        // filterMode='category'           → r.category in categories (사랑의집졸업처럼 카테고리 자체가 졸업 상태)
         const REALESTATE_EXCLUDED_SECTIONS = [
-            { categories: ['학사관'],            containerId: 'haksaExcludedContainer',  countId: 'reCountHaksaExcluded',  searchId: 'searchHaksaExcluded' },
-            { categories: ['사랑의집','소망의집'], containerId: 'sarangExcludedContainer', countId: 'reCountSarangExcluded', searchId: 'searchSarangExcluded' },
-            { categories: ['월드하우스'],         containerId: 'worldExcludedContainer',  countId: 'reCountWorldExcluded',  searchId: 'searchWorldExcluded' }
+            { categories: ['학사관'],          containerId: 'haksaExcludedContainer',  countId: 'reCountHaksaExcluded',  searchId: 'searchHaksaExcluded',  filterMode: 'excluded' },
+            { categories: ['사랑의집졸업'],     containerId: 'sarangExcludedContainer', countId: 'reCountSarangExcluded', searchId: 'searchSarangExcluded', filterMode: 'category' },
+            { categories: ['월드하우스'],       containerId: 'worldExcludedContainer',  countId: 'reCountWorldExcluded',  searchId: 'searchWorldExcluded',  filterMode: 'excluded' }
         ];
 
         function reFmtNum(n) {
@@ -6165,12 +6409,12 @@
                 return;
             }
             const haksaList  = realestateItems.filter(r => r.category === '학사관');
-            const sarangList = realestateItems.filter(r => r.category === '사랑의집' || r.category === '소망의집');
+            const sarangList = realestateItems.filter(r => r.category === '사랑의집' || r.category === '소망의집' || r.category === '사랑의집졸업');
             const worldList  = realestateItems.filter(r => r.category === '월드하우스');
 
             const msg = '부동산 데이터를 Google Sheets에 업로드합니다.\n\n'
                 + '  • 학사관리: ' + haksaList.length + '건\n'
-                + '  • 사랑의집(+소망의집): ' + sarangList.length + '건\n'
+                + '  • 사랑의집(+소망의집+사랑의집졸업): ' + sarangList.length + '건\n'
                 + '  • 월드하우스: ' + worldList.length + '건\n\n'
                 + '⚠ 시트의 기존 부동산 데이터는 이 데이터로 덮어써집니다. 계속하시겠습니까?\n'
                 + '(다른 시트(비품·차량·카메라 등)는 영향 없음)';
@@ -6201,7 +6445,7 @@
         // ── 카테고리 → Google Sheets 시트 타입 매핑 ──────────────
         function reGetSheetType(category) {
             if (category === '학사관') return 'haksa';
-            if (category === '사랑의집' || category === '소망의집') return 'sarang';
+            if (category === '사랑의집' || category === '소망의집' || category === '사랑의집졸업') return 'sarang';
             if (category === '월드하우스') return 'world';
             return null;
         }
@@ -6343,12 +6587,22 @@
             setText('haksaSumDeposit', haksaActive.reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
             setText('haksaSumPeople', haksaActive.reduce((s, r) => s + (Number(r.people) || 0), 0) + '명');
 
-            const sarang = realestateItems.filter(r => r.category === '사랑의집' || r.category === '소망의집');
-            const sarangActive = sarang.filter(r => !r.excluded);
-            setText('sarangCountTotal', sarang.length + '건');
-            setText('sarangSumLove', sarangActive.filter(r=>r.category==='사랑의집').reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
-            setText('sarangSumHope', sarangActive.filter(r=>r.category==='소망의집').reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
-            setText('sarangSumPeople', sarangActive.reduce((s, r) => s + (Number(r.people) || 0), 0) + '명');
+            // 사랑의집 탭 KPI — 사랑의집만, 사역자지원 제외
+            const sarangOnly = realestateItems.filter(r => r.category === '사랑의집' && !isSarangPastor(r));
+            const sarangOnlyActive = sarangOnly.filter(r => !r.excluded);
+            setText('sarangCountTotal', sarangOnlyActive.length + '건');
+            setText('sarangSumLove', sarangOnlyActive.reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
+            setText('sarangSumPeople', sarangOnlyActive.reduce((s, r) => s + (Number(r.people) || 0), 0) + '명');
+
+            // 소망의집 탭 KPI — 소망의집 + 사랑의집졸업 섹션
+            const somangOnly = realestateItems.filter(r => r.category === '소망의집');
+            const somangOnlyActive = somangOnly.filter(r => !r.excluded);
+            const sarangGraduated = realestateItems.filter(r => r.category === '사랑의집졸업');
+            setText('somangCountActive', somangOnlyActive.length + '건');
+            setText('sarangSumHope', somangOnlyActive.reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
+            setText('somangSumPeople', somangOnlyActive.reduce((s, r) => s + (Number(r.people) || 0), 0) + '명');
+            setText('somangCountExcluded', sarangGraduated.length + '건');
+            setText('somangSumGraduated', sarangGraduated.reduce((s, r) => s + (Number(r.deposit) || 0), 0).toLocaleString() + '만원');
 
             const world = realestateItems.filter(r => r.category === '월드하우스');
             const worldActive = world.filter(r => !r.excluded);
@@ -6360,12 +6614,51 @@
             // 활성 섹션 + 관리제외 섹션 렌더
             REALESTATE_SECTIONS.forEach(c => renderRealestateSection(c));
             REALESTATE_EXCLUDED_SECTIONS.forEach(c => renderExcludedSection(c));
+            // 사역자지원 섹션 (사랑의집 별도 관리)
+            renderSarangPastorSection();
+        }
+
+        // 사역자지원 섹션 렌더
+        function renderSarangPastorSection() {
+            const container = document.getElementById('sarangPastorContainer');
+            const countEl = document.getElementById('reCountSarangPastor');
+            const searchEl = document.getElementById('searchSarangPastor');
+            if (!container) return;
+            const q = (searchEl && searchEl.value || '').trim().toLowerCase();
+            let list = realestateItems.filter(r => isSarangPastor(r) && !r.excluded);
+            if (q) {
+                list = list.filter(r =>
+                    [r.name, r.hosu, r.occupant, r.phone, r.address, r.helper, r.helperPhone, r.houseType, r.size, r.owner, r.ownerPhone, r.agency, r.history, r.remark, r.lien, r.rentPayer]
+                        .some(v => String(v || '').toLowerCase().includes(q))
+                );
+            }
+            if (countEl) countEl.textContent = '(' + list.length + '건)';
+            if (!list.length) {
+                container.innerHTML = '<div style="padding:24px;text-align:center;color:#999;">사역자지원 항목이 없습니다.</div>';
+                return;
+            }
+            let html = '<table class="re-table">'
+                + reBuildColgroup()
+                + '<thead><tr>'
+                + '<th class="re-col-id">구분/호수</th>'
+                + '<th class="re-col-occupant">입주자 / 인원 / 연락처 / 헬퍼</th>'
+                + '<th class="re-col-address">주소 / 거주형태 / 규모 / 면적</th>'
+                + '<th class="re-col-money">전세금 / 월세</th>'
+                + '<th class="re-col-move">입주일 / 부담자 / 전세권</th>'
+                + '<th class="re-col-owner">집주인 / 연락처 / 부동산</th>'
+                + '<th class="re-col-status">상태</th>'
+                + '<th class="re-col-action">작업</th>'
+                + '</tr></thead><tbody>';
+            list.forEach(r => { html += reRenderRecordRows(r, false); });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            reAttachResizers(container.querySelector('table'));
         }
 
         // 한 항목을 2행(메인 + 상세) 구조로 렌더 — 첨부 파일 모든 정보 표시
         function reRenderRecordRows(r, isExcluded) {
             // 보증금/월세 라인
-            const depositLine = r.deposit ? '<strong style="color:#1976D2;">전세 ' + Number(r.deposit).toLocaleString() + '만원</strong>' : '<span style="color:#999;">전세 -</span>';
+            const depositLine = r.deposit ? '<strong style="color:#1976D2;">지원 ' + Number(r.deposit).toLocaleString() + '만원</strong>' : '<span style="color:#999;">지원 -</span>';
             const rentLine    = r.rent ? '<span style="color:#C2185B;">월세 ' + Number(r.rent).toLocaleString() + '만원</span>' : '<span style="color:#999;">월세 -</span>';
             const areaLine    = r.area ? '<span class="re-muted">' + reEsc(r.area) + '㎡</span>' : '';
 
@@ -6391,26 +6684,22 @@
                 + (r.ownerPhone ? '<br>📞 ' + reEsc(r.ownerPhone) : '')
                 + (r.agency ? '<br><span class="re-muted">🏢 ' + reMultiline(r.agency) + '</span>' : '');
 
-            // 상태 뱃지
-            const status = r.status || '거주중';
-            const statusColor = status === '거주중' ? '#388E3C' : (status === '졸업' ? '#1976D2' : '#888');
-            const statusBadge = '<span style="display:inline-block;padding:3px 8px;background:' + statusColor + ';color:#fff;border-radius:10px;font-size:0.78rem;font-weight:600;">' + reEsc(status) + '</span>';
+            // 상태 뱃지 — 관리중/완료 두 가지로 단순화
+            //  · 사랑의집졸업 카테고리 → 무조건 '완료'
+            //  · 소망의집 카테고리    → 기본 '완료' (거주중도 완료로 표기)
+            //  · 그 외                 → status 정규화 (거주중→관리중, 졸업→완료)
+            let statusLabel;
+            if (r.category === '사랑의집졸업') statusLabel = '완료';
+            else if (r.category === '소망의집') statusLabel = '완료';
+            else statusLabel = normalizeReStatus(r.status);
+            const badgeColor = statusLabel === '관리중' ? '#388E3C' : '#1976D2';
+            const statusBadge = '<span style="display:inline-block;padding:3px 8px;background:' + badgeColor + ';color:#fff;border-radius:10px;font-size:0.78rem;font-weight:600;">' + reEsc(statusLabel) + '</span>';
 
-            // 작업 버튼
-            let actions;
-            if (isExcluded) {
-                actions = '<div class="action-btns editor-only">'
-                    +     '<button class="btn btn-success btn-sm" onclick="restoreRealestateItem(' + r.id + ')">복원</button>'
-                    +     '<button class="btn btn-secondary btn-sm" onclick="editRealestateItem(' + r.id + ')">수정</button>'
-                    +     '<button class="btn btn-danger btn-sm" onclick="deleteRealestateItem(' + r.id + ')">삭제</button>'
-                    +   '</div>';
-            } else {
-                actions = '<div class="action-btns editor-only">'
-                    +     '<button class="btn btn-secondary btn-sm" onclick="editRealestateItem(' + r.id + ')">수정</button>'
-                    +     '<button class="btn btn-warning btn-sm" style="background:#FFB300;color:#fff;border:none;" onclick="excludeRealestateItem(' + r.id + ')">관리제외</button>'
-                    +     '<button class="btn btn-danger btn-sm" onclick="deleteRealestateItem(' + r.id + ')">삭제</button>'
-                    +   '</div>';
-            }
+            // 작업 버튼 — 수정/삭제만 표시
+            const actions = '<div class="action-btns editor-only">'
+                +     '<button class="btn btn-secondary btn-sm" onclick="editRealestateItem(' + r.id + ')">수정</button>'
+                +     '<button class="btn btn-danger btn-sm" onclick="deleteRealestateItem(' + r.id + ')">삭제</button>'
+                +   '</div>';
 
             const rowBg = isExcluded ? 'background:#FAFAFA;color:#666;' : '';
             const idCell = '<strong>' + reEsc(r.name || '-') + '</strong>' + (r.hosu ? '<br><span class="re-muted">' + reEsc(r.hosu) + '</span>' : '');
@@ -6424,7 +6713,7 @@
                 + '<td data-label="입주일">' + moveLine + '</td>'
                 + '<td data-label="집주인">' + ownerLine + '</td>'
                 + '<td data-label="상태">' + statusBadge
-                +   (isExcluded && r.excludedDate ? '<br><span class="re-muted">제외: ' + reEsc(r.excludedDate) + '</span>' : '')
+                +   (isExcluded && r.excludedDate ? '<br><span class="re-muted">' + reEsc(r.excludedDate) + '</span>' : '')
                 + '</td>'
                 + '<td rowspan="2" data-label="작업">' + actions + '</td>'
                 + '</tr>';
@@ -6453,7 +6742,8 @@
             const searchEl = document.getElementById(cfg.searchId);
             if (!container) return;
             const q = (searchEl && searchEl.value || '').trim().toLowerCase();
-            let list = realestateItems.filter(r => !r.excluded && r.category === cfg.key);
+            // 사랑의집 활성 리스트에서는 사역자지원 항목 제외 (별도 섹션으로 표시)
+            let list = realestateItems.filter(r => !r.excluded && r.category === cfg.key && !(cfg.key === '사랑의집' && isSarangPastor(r)));
             if (q) {
                 list = list.filter(r =>
                     [r.name, r.hosu, r.occupant, r.phone, r.address, r.helper, r.helperPhone, r.houseType, r.size, r.owner, r.ownerPhone, r.agency, r.history, r.remark, r.lien, r.rentPayer]
@@ -6489,7 +6779,12 @@
             const searchEl = document.getElementById(cfg.searchId);
             if (!container) return;
             const q = (searchEl && searchEl.value || '').trim().toLowerCase();
-            let list = realestateItems.filter(r => r.excluded && cfg.categories.indexOf(r.category) !== -1);
+            const mode = cfg.filterMode || 'excluded';
+            let list = realestateItems.filter(r =>
+                mode === 'category'
+                    ? cfg.categories.indexOf(r.category) !== -1
+                    : (r.excluded && cfg.categories.indexOf(r.category) !== -1)
+            );
             if (q) {
                 list = list.filter(r =>
                     [r.category, r.name, r.hosu, r.occupant, r.phone, r.address, r.helper, r.owner, r.ownerPhone, r.agency, r.history, r.remark, r.excludedReason]
@@ -6559,7 +6854,7 @@
             setVal('reRentPayer', item.rentPayer);
             setVal('reMoveInDate', item.moveInDate);
             setVal('reLien', item.lien);
-            setVal('reStatus', item.status || '거주중');
+            setVal('reStatus', normalizeReStatus(item.status));
             setVal('reOwner', item.owner);
             setVal('reOwnerPhone', item.ownerPhone);
             setVal('reAgency', item.agency);
@@ -6571,26 +6866,128 @@
         function excludeRealestateItem(id) {
             const item = realestateItems.find(r => r.id === id);
             if (!item) return;
-            const reason = prompt('관리제외 사유를 입력하세요 (선택사항):', '');
+            const isSarangSomang = (item.category === '사랑의집' || item.category === '소망의집');
+            const promptMsg = isSarangSomang
+                ? '졸업(사랑의집졸업) 사유를 입력하세요 (선택사항):'
+                : '관리제외 사유를 입력하세요 (선택사항):';
+            const reason = prompt(promptMsg, '');
             if (reason === null) return; // 취소
-            item.excluded = true;
-            item.excludedDate = new Date().toISOString().slice(0, 10);
+            const today = new Date().toISOString().slice(0, 10);
+            item.excludedDate = today;
             item.excludedReason = reason || '';
+            if (isSarangSomang) {
+                // 사랑의집/소망의집 → 카테고리를 '사랑의집졸업'으로 변경 (excluded 플래그는 사용하지 않음)
+                item.prevCategory = item.category;
+                item.category = '사랑의집졸업';
+                item.excluded = false;
+            } else {
+                // 학사관·월드하우스 등은 기존 방식 — excluded 플래그
+                item.excluded = true;
+            }
             saveData();
             renderRealestateTables();
             reGsSaveItem(item);
+            if (isSarangSomang) {
+                if (confirm('사랑의집졸업으로 분류되었습니다.\n소망의집 탭의 졸업 섹션에서 확인하시겠습니까?')) {
+                    if (typeof switchTab === 'function') switchTab('somang');
+                }
+            }
         }
 
         function restoreRealestateItem(id) {
             const item = realestateItems.find(r => r.id === id);
             if (!item) return;
-            if (!confirm('이 항목을 ' + (item.category || '관리') + '로 복원하시겠습니까?')) return;
-            item.excluded = false;
-            item.excludedDate = '';
-            item.excludedReason = '';
+            if (item.category === '사랑의집졸업') {
+                // 사랑의집졸업 → 사랑의집 또는 소망의집으로 복원
+                const defaultCat = item.prevCategory === '소망의집' ? '소망의집' : '사랑의집';
+                const choice = prompt('어디로 복원하시겠습니까?\n\n1 = 사랑의집\n2 = 소망의집\n\n(기본값: ' + defaultCat + ')', defaultCat === '사랑의집' ? '1' : '2');
+                if (choice === null) return; // 취소
+                let target = defaultCat;
+                if (choice === '1' || choice === '사랑의집') target = '사랑의집';
+                else if (choice === '2' || choice === '소망의집') target = '소망의집';
+                else if (choice && (choice === '사랑의집' || choice === '소망의집')) target = choice;
+                if (!confirm('이 항목을 \'' + target + '\'(으)로 복원하시겠습니까?')) return;
+                item.category = target;
+                item.prevCategory = '';
+                item.excluded = false;
+                item.excludedDate = '';
+                item.excludedReason = '';
+            } else {
+                if (!confirm('이 항목을 ' + (item.category || '관리') + '로 복원하시겠습니까?')) return;
+                item.excluded = false;
+                item.excludedDate = '';
+                item.excludedReason = '';
+            }
             saveData();
             renderRealestateTables();
             reGsSaveItem(item);
+        }
+
+        // 모달에서 분류 변경 시 — 자동 분류 안내
+        function onCategoryChangeInModal() {
+            const sel = document.getElementById('reCategory');
+            if (!sel) return;
+            // 별도의 동적 처리 필요 시 여기에 추가. 현재는 저장 시 카테고리에 따라 섹션이 자동 분류됨.
+        }
+
+        // 소망의집 현황 중 이름이 '사랑관'으로 시작하는 항목(사랑의집에서 이전된 항목)을
+        // 카테고리를 '사랑의집졸업'으로 변경하여 졸업 섹션으로 일괄 이동
+        function bulkGraduateSarangFromSomang() {
+            if (typeof blockIfReadOnly === 'function' && blockIfReadOnly()) return;
+            const targets = realestateItems.filter(r =>
+                r.category === '소망의집' && /^사랑관/.test(String(r.name || ''))
+            );
+            if (!targets.length) {
+                alert('소망의집 현황 중 이름이 \'사랑관\'으로 시작하는 항목이 없습니다.');
+                return;
+            }
+            const preview = targets.slice(0, 10)
+                .map(r => '• ' + (r.name || '-') + ' / ' + (r.hosu || '-') + ' / ' + (r.occupant || '-')).join('\n')
+                + (targets.length > 10 ? '\n... 외 ' + (targets.length - 10) + '건' : '');
+            if (!confirm('이름이 \'사랑관\'으로 시작하는 소망의집 항목 ' + targets.length + '건을\n분류 \'사랑의집졸업\'으로 일괄 변경하시겠습니까?\n\n' + preview)) return;
+            const today = new Date().toISOString().slice(0, 10);
+            targets.forEach(item => {
+                item.prevCategory = item.category;
+                item.category = '사랑의집졸업';
+                item.excluded = false;
+                item.excludedDate = today;
+                item.excludedReason = item.excludedReason || '사랑의집에서 소망의집으로 졸업 (' + today + ')';
+            });
+            saveData();
+            renderRealestateTables();
+            targets.forEach(item => { try { reGsSaveItem(item); } catch (e) {} });
+            alert(targets.length + '건 분류 변경 완료. 졸업 섹션에서 확인하실 수 있습니다.');
+        }
+
+        // 졸업(사랑의집졸업) 섹션의 항목들을 일괄 복원 (이전 카테고리로)
+        function bulkRestoreSomangFromExcluded() {
+            if (typeof blockIfReadOnly === 'function' && blockIfReadOnly()) return;
+            const targets = realestateItems.filter(r => r.category === '사랑의집졸업');
+            if (!targets.length) {
+                alert('졸업 섹션에 복원할 항목이 없습니다.');
+                return;
+            }
+            const choice = prompt('어디로 일괄 복원하시겠습니까?\n\n1 = 사랑의집\n2 = 소망의집\n0 = 각 항목의 prevCategory에 따라 자동\n', '0');
+            if (choice === null) return;
+            const preview = targets.slice(0, 10)
+                .map(r => '• ' + (r.name || '-') + ' / ' + (r.occupant || '-')).join('\n')
+                + (targets.length > 10 ? '\n... 외 ' + (targets.length - 10) + '건' : '');
+            if (!confirm('졸업 섹션의 ' + targets.length + '건을 일괄 복원하시겠습니까?\n\n' + preview)) return;
+            targets.forEach(item => {
+                let target;
+                if (choice === '1' || choice === '사랑의집') target = '사랑의집';
+                else if (choice === '2' || choice === '소망의집') target = '소망의집';
+                else target = item.prevCategory === '소망의집' ? '소망의집' : '사랑의집';
+                item.category = target;
+                item.prevCategory = '';
+                item.excluded = false;
+                item.excludedDate = '';
+                item.excludedReason = '';
+            });
+            saveData();
+            renderRealestateTables();
+            targets.forEach(item => { try { reGsSaveItem(item); } catch (e) {} });
+            alert(targets.length + '건 복원 완료.');
         }
 
         function deleteRealestateItem(id) {
@@ -6627,7 +7024,7 @@
                 rentPayer: document.getElementById('reRentPayer').value.trim(),
                 moveInDate: document.getElementById('reMoveInDate').value,
                 lien: document.getElementById('reLien').value.trim(),
-                status: document.getElementById('reStatus').value,
+                status: normalizeReStatus(document.getElementById('reStatus').value),
                 owner: document.getElementById('reOwner').value.trim(),
                 ownerPhone: document.getElementById('reOwnerPhone').value.trim(),
                 agency: document.getElementById('reAgency').value.trim(),
