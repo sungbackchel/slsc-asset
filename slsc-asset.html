@@ -479,35 +479,41 @@
             }
             .re-table thead { display: none; }  /* 헤더 숨김 */
             .re-table tbody tr.re-main {
-                margin-top: 12px;
-                background: #fff; border: 1px solid #CFD8DC; border-radius: 8px;
-                padding: 10px 12px 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                margin-top: 6px;
+                background: #fff; border: 1px solid #CFD8DC; border-radius: 6px;
+                padding: 6px 8px 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             .re-table tbody tr.re-detail {
                 background: #FAFBFE; border: 1px solid #CFD8DC; border-top: none;
-                border-radius: 0 0 8px 8px; margin-top: -12px; padding: 6px 12px 10px;
-                margin-bottom: 4px;
+                border-radius: 0 0 6px 6px; margin-top: -6px; padding: 3px 8px 6px;
+                margin-bottom: 0;
             }
+            /* 빈 상세 행은 모바일에서 표시하지 않음 — 카드 사이 여백 축소 */
+            .re-table tbody tr.re-detail.re-detail-empty { display: none !important; }
             .re-table tbody td {
-                border: none !important; padding: 4px 0 !important;
-                position: relative; padding-left: 6.5em !important;
+                border: none !important; padding: 2px 0 !important;
+                position: relative; padding-left: 6em !important;
+                min-height: 0;
             }
+            /* 데이터가 비어있는 셀은 숨김 (불필요한 라벨/공백 제거) */
+            .re-table tbody td:empty { display: none !important; }
             /* 각 셀 앞에 라벨 표시 (data-label 사용) */
             .re-table tbody td::before {
                 content: attr(data-label);
-                position: absolute; left: 0; top: 4px;
-                width: 6em; color: #1976D2; font-weight: 600; font-size: 0.78rem;
+                position: absolute; left: 0; top: 2px;
+                width: 5.5em; color: #1976D2; font-weight: 600; font-size: 0.75rem;
             }
             .re-table td.re-id-cell {
-                background: #F0F4F8; border-radius: 6px;
-                margin: -10px -12px 8px; padding: 8px 12px !important;
-                font-size: 0.95rem; font-weight: 700;
+                background: #F0F4F8; border-radius: 4px;
+                margin: -6px -8px 4px; padding: 5px 8px !important;
+                font-size: 0.9rem; font-weight: 700;
             }
             .re-table td.re-id-cell::before { display: none; }
-            .re-table tr.re-detail td { padding-left: 0 !important; }
+            .re-table tr.re-detail td { padding-left: 0 !important; padding-top: 1px !important; padding-bottom: 1px !important; }
             .re-table tr.re-detail td::before { display: none; }
-            .re-table .action-btns { flex-direction: row; margin-top: 6px; }
-            .re-table .action-btns .btn-sm { width: auto; flex: 1; }
+            .re-table tr.re-detail td > div { margin-bottom: 1px; line-height: 1.35; }
+            .re-table .action-btns { flex-direction: row; margin-top: 3px; gap: 4px; }
+            .re-table .action-btns .btn-sm { width: auto; flex: 1; padding: 4px 6px; font-size: 0.75rem; }
         }
 
         .btn-sm {
@@ -6802,7 +6808,7 @@
                     + '</td>'
                     + '</tr>';
             } else {
-                html += '<tr class="re-detail" style="' + rowBg + '"><td colspan="6" style="border-top:none;padding:2px 0;"></td></tr>';
+                html += '<tr class="re-detail re-detail-empty" style="' + rowBg + '"><td colspan="6" style="border-top:none;padding:2px 0;"></td></tr>';
             }
             return html;
         }
